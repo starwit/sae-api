@@ -1,9 +1,9 @@
 import pytest
 
-def test_mystage_import():
+def test_saeapi_import():
     try:
-        from mystage.mystage import MyStage
+        from saeapi.saeapi import SaeApi
     except ImportError as e:
-        pytest.fail(f"Failed to import MyStage: {e}")
+        pytest.fail(f"Failed to import SaeApi: {e}")
 
-    assert MyStage is not None, "MyStage should be imported successfully"
+    assert SaeApi is not None, "SaeApi should be imported successfully"
