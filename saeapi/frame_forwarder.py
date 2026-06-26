@@ -23,7 +23,6 @@ class FrameForwarder:
         self._config = config
         self._scan_pattern = f'{config.frame_forwarding.video_source_stream_prefix}:*'
         self._output_prefix = config.frame_forwarding.output_stream_prefix
-        self._instance_id = config.instance_id
 
         self._source_client = None
         self._publish_ctx = ValkeyPublisher(config.backend_valkey.host, config.backend_valkey.port)
@@ -79,7 +78,7 @@ class FrameForwarder:
         out_msg.type = MessageType.SAE
 
         source_id = stream_key.decode('utf-8').split(':', 1)[1]
-        output_key = f'{self._output_prefix}:{self._instance_id}:{source_id}'
+        output_key = f'{self._output_prefix}:{source_id}'
         self._publish(output_key, out_msg.SerializeToString())
 
         FRAMES_FORWARDED.inc()

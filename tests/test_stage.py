@@ -104,7 +104,7 @@ def test_run_stage_startup_forward_shutdown(stage_config, source_client_mock,
     # A frame was forwarded to the per-source backend stream
     frame_publisher_mock.assert_called_once()
     frame_key, frame_proto = frame_publisher_mock.call_args.args
-    assert frame_key == 'saeapi-frame:inst1:cam1'
+    assert frame_key == 'saeapi-frame:cam1'
     forwarded = SaeMessage()
     forwarded.ParseFromString(frame_proto)
     assert forwarded.frame.timestamp_utc_ms == 99

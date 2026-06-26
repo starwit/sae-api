@@ -64,7 +64,7 @@ def test_forward_once_forwards_latest_frame(make_config, source_client_mock, pub
     # A single frame-only message was published to the per-source output stream
     publisher_mock.assert_called_once()
     output_key, proto_data = publisher_mock.call_args.args
-    assert output_key == 'saeapi-frame:inst1:cam1'
+    assert output_key == 'saeapi-frame:cam1'
 
     out_msg = SaeMessage()
     out_msg.ParseFromString(proto_data)
