@@ -2,26 +2,26 @@ import logging
 import signal
 import threading
 
-from prometheus_client import Counter, Histogram, start_http_server
-from visionlib.pipeline import ValkeyConsumer, ValkeyPublisher
+from prometheus_client import start_http_server
 
 from .config import SaeApiConfig
-from .saeapi import SaeApi
+from .frame_forwarder import FrameForwarder
+from .event_reporter import EventReporter
 
+logging.basicConfig(format='%(asctime)s %(name)-15s %(levelname)-8s %(processName)-10s %(message)s')
 logger = logging.getLogger(__name__)
 
-REDIS_PUBLISH_DURATION = Histogram('sae_api_redis_publish_duration', 'The time it takes to push a message onto the Redis stream',
-                                   buckets=(0.0025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.25))
-FRAME_COUNTER = Counter('sae_api_frame_counter', 'How many frames have been consumed from the Redis input stream')
 
 def run_stage():
 
     stop_event = threading.Event()
 
-    # Register signal handlers
+    # Register signal handlers. Any termination signal (SIGTERM from an orchestrator,
+    # SIGINT from Ctrl-C) sets the stop event and triggers a graceful shutdown, including
+    # the shutdown status report.
     def sig_handler(signum, _):
         signame = signal.Signals(signum).name
-        print(f'Caught signal {signame} ({signum}). Exiting...')
+        logger.info(f'Caught signal {signame} ({signum}). Exiting...')
         stop_event.set()
 
     signal.signal(signal.SIGTERM, sig_handler)
@@ -33,34 +33,29 @@ def run_stage():
     logger.setLevel(CONFIG.log_level.value)
 
     logger.info(f'Starting prometheus metrics endpoint on port {CONFIG.prometheus_port}')
-
     start_http_server(CONFIG.prometheus_port)
 
-    logger.info(f'Starting geo mapper stage. Config: {CONFIG.model_dump_json(indent=2)}')
+    logger.info(f'Starting sae-api stage. Config: {CONFIG.model_dump_json(indent=2)}')
 
-    sae_api = SaeApi(CONFIG)
+    with EventReporter(CONFIG) as status, FrameForwarder(CONFIG) as forwarder:
+        status.report_startup()
 
-    consumer_ctx = ValkeyConsumer(CONFIG.redis.host, CONFIG.redis.port, 
-                                 stream_keys=[f'{CONFIG.redis.input_stream_prefix}:{CONFIG.redis.stream_id}'])
-    publish_ctx = ValkeyPublisher(CONFIG.redis.host, CONFIG.redis.port)
-    
-    with consumer_ctx as iter_messages, publish_ctx as publish:
-        for stream_key, proto_data in iter_messages():
-            if stop_event.is_set():
-                break
+        def poll_loop():
+            while not stop_event.is_set():
+                try:
+                    forwarder.forward_once()
+                except Exception as e:
+                    logger.error('Error during frame forwarding cycle', exc_info=e)
+                # Wait returns True as soon as the stop event is set, otherwise after the interval
+                if stop_event.wait(CONFIG.frame_forwarding.poll_interval_s):
+                    break
 
-            if stream_key is None:
-                continue
+        poll_thread = threading.Thread(target=poll_loop, name='frame-forwarder', daemon=True)
+        poll_thread.start()
 
-            stream_id = stream_key.split(':')[1]
+        # Block the main thread until a termination signal arrives
+        stop_event.wait()
 
-            FRAME_COUNTER.inc()
+        poll_thread.join(timeout=10)
 
-            output_proto_data = sae_api.get(proto_data)
-
-            if output_proto_data is None:
-                continue
-            
-            with REDIS_PUBLISH_DURATION.time():
-                publish(f'{CONFIG.redis.output_stream_prefix}:{stream_id}', output_proto_data)
-            
+        status.report_shutdown()
