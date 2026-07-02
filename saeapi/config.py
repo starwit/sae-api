@@ -34,7 +34,7 @@ class SaeApiConfig(BaseSettings):
     backend_valkey: ValkeyConfig
     event_reporting: EventReportingConfig = EventReportingConfig()
     frame_forwarding: FrameForwardingConfig
-    prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
+    prometheus_port: Annotated[int, Field(ge=1024, le=65535)] = 8000
 
     model_config = SettingsConfigDict(env_nested_delimiter='__')
 
