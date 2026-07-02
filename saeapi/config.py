@@ -8,7 +8,7 @@ from visionlib.pipeline.settings import LogLevel
 
 class ValkeyConfig(BaseModel):
     host: str = 'localhost'
-    port: Annotated[int, Field(ge=1, le=65536)] = 6379
+    port: Annotated[int, Field(ge=1, le=65535)] = 6379
 
 
 class EventReportingConfig(BaseModel):
