@@ -800,7 +800,7 @@ ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==23.2.1)", "requests (>=2.31.0)"
 
 [[package]]
 name = "visionapi"
-version = "3.6.0"
+version = "3.7.0"
 description = ""
 optional = false
 python-versions = "^3.10"
@@ -814,8 +814,8 @@ protobuf = "6.31.1"
 [package.source]
 type = "git"
 url = "https://github.com/starwit/vision-api.git"
-reference = "c895601"
-resolved_reference = "c89560153c7f3a07c36ebe0ac3392c4dbc64b27d"
+reference = "3.7.0"
+resolved_reference = "a591125867be65a4c12e3adf8edc4286ad8ba374"
 subdirectory = "python/visionapi"
 
 [[package]]
@@ -847,4 +847,4 @@ subdirectory = "python"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "4b1baa5fcd36db707d930b47595523a68ac5df8bad76a111fe577f8a18f2ff5f"
+content-hash = "bb502801e0bbcd4fe1174d42828d4d3732412d799cf7e58d9ccd71d1d82790e2"
