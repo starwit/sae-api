@@ -6,17 +6,35 @@ from typing_extensions import Annotated
 from visionlib.pipeline.settings import LogLevel
 
 
-class RedisConfig(BaseModel):
+class ValkeyConfig(BaseModel):
     host: str = 'localhost'
-    port: Annotated[int, Field(ge=1, le=65536)] = 6379
-    stream_id: str
-    input_stream_prefix: str
-    output_stream_prefix: str = 'saeapi'
+    port: Annotated[int, Field(ge=1, le=65535)] = 6379
+
+
+class EventReportingConfig(BaseModel):
+    # Event messages are written to '{output_stream_prefix}:{instance_id}'
+    output_stream_prefix: str = 'saeapi-event'
+
+
+class FrameForwardingConfig(BaseModel):
+    # Source streams are discovered by scanning '{video_source_stream_prefix}:*'
+    video_source_stream_prefix: str
+    # Forwarded frames are written to '{output_stream_prefix}:{source_id}'
+    output_stream_prefix: str = 'saeapi-frame'
+    poll_interval_s: float = 600.0
+
 
 class SaeApiConfig(BaseSettings):
     log_level: LogLevel = LogLevel.WARNING
-    redis: RedisConfig
-    prometheus_port: Annotated[int, Field(ge=1024, le=65536)] = 8000
+    # Identifies this SAE instance; reflected in all output stream names
+    instance_id: str
+    # Local instance SAE Valkey, where we read video source frames from
+    source_valkey: ValkeyConfig
+    # Remote cloud backend Valkey, where we write all output to
+    backend_valkey: ValkeyConfig
+    event_reporting: EventReportingConfig = EventReportingConfig()
+    frame_forwarding: FrameForwardingConfig
+    prometheus_port: Annotated[int, Field(ge=1024, le=65535)] = 8000
 
     model_config = SettingsConfigDict(env_nested_delimiter='__')
 
