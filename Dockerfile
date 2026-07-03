@@ -1,4 +1,4 @@
-FROM starwitorg/base-python-image:3.14.0 AS build
+FROM starwitorg/base-python-image:3.14.0-py3.14-ptr2.3.4 AS build
 
 # Copy only files that are necessary to install dependencies
 COPY poetry.lock poetry.toml pyproject.toml /code/
